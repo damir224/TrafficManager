@@ -46,16 +46,23 @@ jobs:
         run: |
           URL="https://damir224.github.io/TrafficManager/"
           echo "Checking $URL"
-          for i in {1..5}; do
+          for i in {1..10}; do
             code=$(curl -s -o /dev/null -w "%{http_code}" "$URL");
             echo "Attempt $i: HTTP $code";
             if [ "$code" = "200" ]; then
               break;
             fi;
-            sleep 30;
+            sleep 15;
           done
           test "$code" = "200"
-      - name: Check static markers
-        run: |
-          URL="https://damir224.github.io/TrafficManager/"
-          curl -s "$URL" | grep -q "hud-root"
+      - name: Headless verify with Playwright
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Check HUD and canvas via Playwright
+        env:
+          BASE_URL: https://damir224.github.io/TrafficManager/
+          SKIP_WEBSERVER: "1"
+        run: npx playwright test -c playwright.config.cjs e2e/smoke.spec.js
